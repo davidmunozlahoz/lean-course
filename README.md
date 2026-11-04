@@ -42,3 +42,17 @@ of the course to read [Autoformalize your Math](https://lean.functionalanalysism
 
 - 3.1 Setting up Lean locally inside VSCode
 - 3.2 Setting up codex with its skills and MCP, and start doing some AI-assisted formalizations!
+
+```text
+**State mode** — activated when asked to state (but not prove) a result.
+- Fill every proof body with `sorry`.
+- The file must compile modulo `sorry` (no other errors).
+- Do not write any proof content; the signatures are what will be reviewed.
+
+**Prove mode** — activated when asked to prove a result.
+- Do not introduce any custom axioms.
+- The file must compile with no `sorry` whatsoever.
+- If the proof needs an auxiliary result, introduce it as a `private lemma`
+  with its own proof; do not touch public declarations.
+- The file must compile with no style or suggested `warning`.
+```
