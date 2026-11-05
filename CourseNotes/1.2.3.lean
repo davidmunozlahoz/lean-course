@@ -26,7 +26,9 @@ sequence converges:
 -/
 
 theorem convergesTo_const (a : ℝ) : ConvergesTo (fun _ : ℕ => a) a := by
-  intro ε εpos
+  -- remember: ∀ ε > 0, ... is short for ∀ ε, ε > 0 → ...
+  -- so we have to introduce two things: the ε and the fact that ε > 0
+  intro ε εpos 
   use 0
   intro n nge
   rw [sub_self, abs_zero]
@@ -65,34 +67,37 @@ theorem convergesTo_add {s t : ℕ → ℝ} {a b : ℝ}
     _ = ε := by ring
 
 /-
-Two new things here:
-    - The arguments {s t} {a b} in curly braces are implicit, as we
-      saw in 1.1: when we use convergesTo_add, Lean figures them out
+Three new things here:
+    - The arguments {s t} {a b} in curly braces are implicit when we use convergesTo_add, Lean figures them out
       from cs and ct.
     - calc allows us to write a chain of equalities and inequalities,
       exactly as on paper. Each step is _ rel term := proof, where _
       stands for the right-hand side of the previous step. Lean
       deduces the relation between the first and the last term.
+    - Notice abs_add_le _ _: the underscore indicates Lean to infer
+      what to use in _. It has to be used with care: it can be cleaner
+      sometimes, but a lot of times it can also make the code more
+      difficult to follow. Of course, it will also work if what goes
+      in _ is clear and unambiguous.
 
 Now some exercises for you to do:
 -/
 
 theorem convergesTo_neg {s : ℕ → ℝ} {a : ℝ} (cs : ConvergesTo s a) :
     ConvergesTo (fun n => -s n) (-a) := by
-  sorry   -- Hint: |-x| = |x| is abs_neg.
+  sorry   -- Hint: abs_neg has type |-x| = |x|.
 
 theorem convergesTo_sub {s t : ℕ → ℝ} {a b : ℝ}
     (cs : ConvergesTo s a) (ct : ConvergesTo t b) :
     ConvergesTo (fun n => s n - t n) (a - b) := by
-  sorry   -- Hint: use the two previous theorems, and sub_eq_add_neg.
+  sorry   -- Hint: use sub_eq_add_neg.
 
 theorem convergesTo_mul_const {s : ℕ → ℝ} {a : ℝ} (c : ℝ)
     (cs : ConvergesTo s a) : ConvergesTo (fun n => c * s n) (c * a) := by
   by_cases h : c = 0
-  · sorry   -- Hint: rewrite with h, and use convergesTo_const.
+  · sorry
   · have acpos : 0 < |c| := abs_pos.mpr h
-    sorry   -- Hint: take ε / |c| in cs. Look for abs_mul and
-            -- lt_div_iff₀ (or try exact? at each step).
+    sorry -- Hint: field_simp may be useful
 
 /-
 And a harder one, the uniqueness of limits: if s converges

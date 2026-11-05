@@ -86,7 +86,9 @@ anything. This is why a finished proof should never contain one.
 /-
 Let us now introduce the propositional connectives. For each of them
 you have to know two things: how to prove it (introduction), and how
-to use it (elimination).
+to use it (elimination). The following is an overview of these
+connectives. Don't feel intimidated by it: we'll go through them one
+by one, with lots of examples and exercises.
 
     Connective  Typed   Introduction            Elimination
     ----------  ------  ----------------------  -------------------------
@@ -102,7 +104,10 @@ to use it (elimination).
 The angle brackets ⟨ ⟩ are typed \< and \>. They are called the
 anonymous constructor, and can be used whenever Lean knows which
 structure it has to build. Note that ¬p is defined as p → False, so
-to prove ¬p you assume p and reach a contradiction.
+to prove ¬p you assume p and reach a contradiction. The binding of
+these connectors follows the usual mathematical convention; from
+strongest to weakest, they are: negation, conjunction, disjunction,
+implication, and biconditional.
 
 Some examples and exercises:
 -/
@@ -143,6 +148,8 @@ any of its two components: h.1 : p and h.2 : q (these are
 And.left h and And.right h).
 -/
 
+#check And.intro
+
 example (hp : p) (hq : q) : p ∧ q := ⟨hp, hq⟩
 
 example (h : p ∧ q) : q ∧ p := ⟨h.2, h.1⟩
@@ -154,12 +161,24 @@ example : (p → q → r) → (p ∧ q → r) := sorry
 example : (p → q) → p ∧ r → q ∧ r := sorry
 
 /-
+Most of the time, we don't write Lean terms directly, but use tactics
+instead.
+At this point of the course, you can continue reading to actually
+learn the Lean fundamentals and how to construct terms, or jump
+directly to 1.2.0 to start working with tactics and more tangible
+mathematics quicker.
+-/
+
+/-
 Or. To prove p ∨ q, we prove one of the two, and we have to say
 which: given hp : p we get Or.inl hp : p ∨ q, and given hq : q we
 get Or.inr hq : p ∨ q (inl and inr stand for "injection left" and
 "injection right"). To use h : p ∨ q to prove some r, we argue by
 cases: we prove r assuming p, and r assuming q. This is
 Or.elim h (fun hp => ...) (fun hq => ...) : r.
+
+Note that we cannot construct Or using the anonymous constructor; the reason is
+that Or has more than one possible constructor.
 -/
 
 example : p → p ∨ q := fun hp => Or.inl hp

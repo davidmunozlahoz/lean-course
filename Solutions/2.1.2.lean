@@ -7,7 +7,7 @@ At the end of 2.1.1 we wanted Lean to find the monoid structure of a
 type by itself. To do so, we replace the keyword structure by class:
 -/
 
-class Monoid₂ (α : Type*) where
+class Monoid₂ (α : Type) where
   mul : α → α → α
   one : α
   mul_assoc : ∀ x y z, mul (mul x y) z = mul x (mul y z)
@@ -28,7 +28,7 @@ instance natAdd : Monoid₂ ℕ where
   one_mul := Nat.zero_add
   mul_one := Nat.add_zero
 
-instance (α : Type*) : Monoid₂ (α → α) where
+instance (α : Type) : Monoid₂ (α → α) where
   mul := fun f g => f ∘ g
   one := id
   mul_assoc := fun _ _ _ => rfl
@@ -49,7 +49,7 @@ This process of finding instances is called type class inference.
 Let us see how we state theorems about all monoids:
 -/
 
-theorem Monoid₂.one_unique {α : Type*} [Monoid₂ α] (e : α)
+theorem Monoid₂.one_unique {α : Type} [Monoid₂ α] (e : α)
     (h : ∀ x, Monoid₂.mul e x = x) : e = Monoid₂.one := by
   rw [← Monoid₂.mul_one e]
   exact h Monoid₂.one
@@ -89,9 +89,14 @@ since it unfolds the instance natAdd.
 Instances can depend on other instances. This is where type class
 inference really shines. For instance, the product of two monoids is
 a monoid:
+
+(Below α × β is the product type; its set-theoretical analogue
+is the Cartesian product. You can take for granted that every term of type
+α × β is constructed from a term of type α and a term of type β using
+the anonymous constructor (in other words, it works exactly like ∧).)
 -/
 
-instance {α β : Type*} [Monoid₂ α] [Monoid₂ β] : Monoid₂ (α × β) where
+instance {α β : Type} [Monoid₂ α] [Monoid₂ β] : Monoid₂ (α × β) where
   mul := fun p q => (Monoid₂.mul p.1 q.1, Monoid₂.mul p.2 q.2)
   one := (Monoid₂.one, Monoid₂.one)
   mul_assoc := by
@@ -139,6 +144,9 @@ instance : Monoid₂ Bool where
 
 example : Monoid₂.mul false (Monoid₂.mul true false) = true := by
   sorry
+  -- Careful: a simple rw will not work here, because rw does
+  -- not identify false with Monoid₂.one automaticaaly. You need to use
+  -- something more powerful, like simp.
 
 /-
 Notation. Writing Monoid₂.mul x y is still far from x * y. Luckily,
@@ -157,18 +165,18 @@ For instance, + has precedence 65 and * has 70, so a + b * c is
 a + (b * c).
 -/
 
-example {α : Type*} [Monoid₂ α] (x y z : α) :
+example {α : Type} [Monoid₂ α] (x y z : α) :
     x ⋆ y ⋆ z = x ⋆ (y ⋆ z) :=
   Monoid₂.mul_assoc x y z
 
-example {α : Type*} [Monoid₂ α] (x : α) : 𝟙 ⋆ x ⋆ 𝟙 = x := by
+example {α : Type} [Monoid₂ α] (x : α) : 𝟙 ⋆ x ⋆ 𝟙 = x := by
   rw [Monoid₂.mul_one, Monoid₂.one_mul]
 
 /-
 Now prove the following with our notation:
 -/
 
-example {α : Type*} [Monoid₂ α] (w x y z : α) :
+example {α : Type} [Monoid₂ α] (w x y z : α) :
     (w ⋆ x) ⋆ (y ⋆ z) = w ⋆ ((x ⋆ y) ⋆ z) := by
   sorry
 
@@ -182,7 +190,7 @@ groups in mathlib are available:
 
 section
 
-variable {G : Type*} [Group G]
+variable {G : Type} [Group G]
 
 #check mul_assoc      -- mul_assoc (a b c : G) : a * b * c = a * (b * c)
 #check one_mul        -- one_mul (a : M) : 1 * a = a
@@ -214,7 +222,7 @@ instance [CommRing R].
 
 section
 
-variable {R : Type*} [CommRing R]
+variable {R : Type} [CommRing R]
 
 example (a b : R) : (a + b) * (a - b) = a ^ 2 - b ^ 2 := by
   ring
@@ -230,10 +238,13 @@ example (a b : R) (h : a + b = 0) : a ^ 2 = b ^ 2 := by
   ring
 
 example (a b c : R) (h : a = b + c) : a * a - b * a = c * a := by
-  sorry
+  rw [h]
+  ring
 
 example (a b : R) (h : a * b = 0) : (a + b) ^ 2 = a ^ 2 + b ^ 2 := by
-  sorry
+  ring_nf
+  rw [h]
+  ring
 
 end
 
@@ -248,7 +259,7 @@ usual axioms. Thus, a vector space is given by three instances
 
 section
 
-variable {K V : Type*} [Field K] [AddCommGroup V] [Module K V]
+variable {K V : Type} [Field K] [AddCommGroup V] [Module K V]
 
 #check smul_add  -- smul_add (a : M) (b₁ b₂ : A) : a • (b₁ + b₂) = a • b₁ + a • b₂
 #check add_smul  -- add_smul (r s : R) (x : M) : (r + s) • x = r • x + s • x
@@ -265,7 +276,10 @@ example (a : K) (ha : a ≠ 0) (v : V) : a⁻¹ • a • v = v := by
   sorry
 
 example (v : V) : (2 : K) • v = v + v := by
-  sorry
+  calc
+    (2 : K) • v = ((1 : K) + (1 : K)) • v := by rw [one_add_one_eq_two]
+              _ = (1 : K) • v + (1 : K) • v := by rw [add_smul]
+              _ = v + v := by rw [one_smul]
 
 end
 
@@ -276,7 +290,7 @@ function, together with the proofs that it preserves the operation
 and the unit. Let us define them for our monoids:
 -/
 
-structure MonoidHom₂ (α β : Type*) [Monoid₂ α] [Monoid₂ β] where
+structure MonoidHom₂ (α β : Type) [Monoid₂ α] [Monoid₂ β] where
   toFun : α → β
   map_one : toFun 𝟙 = 𝟙
   map_mul : ∀ x y, toFun (x ⋆ y) = toFun x ⋆ toFun y
@@ -298,7 +312,7 @@ def double : MonoidHom₂ ℕ ℕ where
 
 namespace MonoidHom₂
 
-variable {α β γ : Type*} [Monoid₂ α] [Monoid₂ β] [Monoid₂ γ]
+variable {α β γ : Type} [Monoid₂ α] [Monoid₂ β] [Monoid₂ γ]
 
 /-
 The identity of α is always a monoid homomorphism.
@@ -316,13 +330,18 @@ a morphism maps inverses (if they exist) to inverses:
 -/
 
 def comp (g : MonoidHom₂ β γ) (f : MonoidHom₂ α β) : MonoidHom₂ α γ where
-  toFun := sorry
-  map_one := sorry
-  map_mul := sorry
+  toFun := g.toFun ∘ f.toFun
+  map_one := by
+    dsimp
+    repeat rw [map_one]
+  map_mul := by
+    intro x y
+    dsimp
+    rw [map_mul, map_mul]
 
 theorem map_of_mul_eq_one (f : MonoidHom₂ α β) (x y : α) (h : x ⋆ y = 𝟙) :
     f.toFun x ⋆ f.toFun y = 𝟙 := by
-  sorry
+  rw [← map_mul, h, map_one]
 
 end MonoidHom₂
 
@@ -340,7 +359,7 @@ For them, we can already write f x, instead of f.toFun x (again, we will see thi
 
 section
 
-variable {G H : Type*} [Group G] [Group H]
+variable {G H : Type} [Group G] [Group H]
 
 example (f : G →* H) (x y : G) : f (x * y) = f x * f y :=
   f.map_mul x y
@@ -352,19 +371,19 @@ example (f : G →* H) (x : G) : f x⁻¹ = (f x)⁻¹ :=
   map_inv f x
 
 example (f : G →* H) (x y : G) : f (x * y⁻¹) = f x * (f y)⁻¹ := by
-  sorry
+  rw [map_mul, map_inv]
 
-variable {R S : Type*} [Ring R] [Ring S]
+variable {R S : Type} [Ring R] [Ring S]
 
 example (f : R →+* S) (a b : R) : f (a * b + 1) = f a * f b + 1 := by
-  sorry
+  rw [map_add, map_mul, map_one]
 
-variable {K V W : Type*} [Field K] [AddCommGroup V] [Module K V]
+variable {K V W : Type} [Field K] [AddCommGroup V] [Module K V]
   [AddCommGroup W] [Module K W]
 
 example (f : V →ₗ[K] W) (a : K) (u v : V) :
     f (a • u + v) = a • f u + f v := by
-  sorry
+  rw [map_add, map_smul]
 
 end
 

@@ -14,7 +14,8 @@ Tactics allow us to do precisely this. A tactic is an instruction
 that tells Lean how to make progress in the proof: "assume", "split
 into two cases", "apply this theorem", and so on. Behind the scenes,
 each tactic builds a piece of the proof term for us. We enter tactic
-mode with the keyword by:
+mode with the keyword by (don't worry about the meaning of the tactics
+in the next example; we'll go through them one by one below):
 -/
 
 section
@@ -87,10 +88,12 @@ target is False, then apply hnp reduces it to p.
 -/
 
 example : p → p := by
-  sorry
+  intro hp
+  exact hp
 
 example : (p → q → r) → (q → p → r) := by
-  sorry
+  intro hpqr hq hp
+  exact hpqr hp hq
 
 example : (p → p → q) → p → q := by
   sorry
@@ -99,7 +102,8 @@ example : (p → q) → ¬q → ¬p := by
   sorry
 
 example : p → ¬¬p := by
-  sorry
+  intro hp hnp
+  exact hnp hp
 
 /-
 To prove p ∧ q, the tactic constructor
@@ -270,14 +274,24 @@ example : (p → q) → (q → r) → p → r := by
   exact hr
 
 /-
-Try to use have to organize the following proofs:
+We can also omit the name: have : q := proof adds the hypothesis to
+the context with the name this, which we can use as any other name.
+And if the statement can be deduced from the proof, we can omit it
+too, and write simply have := proof.
 -/
 
-example : (p → q) → (q → r) → (r → ¬p) → ¬p := by
-  sorry
+example : (p → q) → (q → r) → p → r := by
+  intro hpq hqr hp
+  have : q := hpq hp
+  exact hqr this
 
-example : (p ∧ q → r) → (p → q) → p → r := by
-  sorry
+/-
+There is only one this at a time: after a second nameless have, the
+name this refers to the new hypothesis. The old one stays in the
+context, but it appears as this✝ in the infoview, and we cannot refer
+to it by that name. So this is fine for a fact that we use right
+away, as above, but anything that we need later deserves a name.
+-/
 
 /-
 use (and the quantifiers). Recall that ∀ is a (dependent) function,
@@ -307,10 +321,27 @@ since hqw is in the context.
 -/
 
 example : (∀ x, P x → Q x) → (∀ x, P x) → ∀ x, Q x := by
-  sorry
+  intro hPQ hP x
+  exact (hPQ x) (hP x)
 
 example : (∀ x, P x ∧ Q x) ↔ (∀ x, P x) ∧ (∀ x, Q x) := by
-  sorry
+  constructor
+  · intro h
+    constructor
+    · intro x
+      exact (h x).1
+    · intro x
+      exact (h x).2
+  · intro h
+    exact (fun x => ⟨h.1 x, h.2 x⟩)
+
+/- Or, using more direct terms: -/
+example : (∀ x, P x ∧ Q x) ↔ (∀ x, P x) ∧ (∀ x, Q x) := by
+  constructor
+  · intro h
+    exact ⟨fun x => (h x).1, fun x => (h x).2⟩
+  · intro h
+    exact (fun x => ⟨h.1 x, h.2 x⟩)
 
 example : ∃ n : ℕ, n * n = 16 := by
   sorry

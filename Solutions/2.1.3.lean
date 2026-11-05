@@ -72,22 +72,3 @@ instance {α : Type*} : Group₃ (Equiv.Perm α) where
   one_mul₃ := one_mul
   mul_one₃ := mul_one
   inv_mul₃ := inv_mul_cancel
-
-/-
-Now it is your turn. Give an instance of Monoid₃ ℕ (with the usual
-multiplication), and prove that, in a group, the inverse of a is also
-a right inverse of a. Hint: use calc, and write
-    a * a⁻¹ = 1 * (a * a⁻¹) = ((a⁻¹)⁻¹ * a⁻¹) * (a * a⁻¹) = ...
--/
-
-instance : Monoid₃ ℕ where
-  mul_assoc₃ := sorry
-  one_mul₃ := sorry
-  mul_one₃ := sorry
-
-theorem Group₃.mul_inv₃ {α : Type*} [Group₃ α] (a : α) : a * a⁻¹ = 1 := by
-  sorry
-
-theorem Group₃.mul_left_cancel₃ {α : Type*} [Group₃ α] {a b c : α}
-    (h : a * b = a * c) : b = c := by
-  sorry

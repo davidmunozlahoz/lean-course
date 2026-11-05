@@ -144,7 +144,7 @@ example (N P : Submonoid₁ M) (h : ∀ x ∈ N, x ∈ P) : N ≤ P :=
 
 /-
 Now it is your turn. Define the intersection of two submonoids, and
-the submonoid containing only 1 (replace all sorries):
+the submonoid containing only 1 (replace all sorries).
 -/
 
 def inter (N P : Submonoid₁ M) : Submonoid₁ M where
@@ -159,6 +159,13 @@ def bot : Submonoid₁ M where
 
 example (N P : Submonoid₁ M) (x : M) : x ∈ inter N P ↔ x ∈ N ∧ x ∈ P := by
   sorry
+
+/-
+You may find it useful below to use the change tactic, which can be
+used to change the goal (or a hypothesis, using the at) by a term that
+is definitionally equal. For instance, x ∈ {1} is definitionally equal
+to x=1.
+-/
 
 example (N : Submonoid₁ M) : bot ≤ N := by
   sorry

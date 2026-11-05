@@ -75,13 +75,13 @@ example (m n : ℕ) (h : (m : ℝ) < (n : ℝ)) : m < n := by
   norm_cast at h
 
 example (m n : ℕ) : ((m * n + 1 : ℕ) : ℝ) = m * n + 1 := by
-  sorry
+  norm_cast
 
 example (m n : ℕ) (h : m ≤ n) : (m : ℝ) ≤ n := by
-  sorry
+  norm_cast
 
 example (a : ℕ) (h : (a : ℤ) = 3) : a = 3 := by
-  sorry
+  norm_cast at h
 
 end
 
@@ -129,8 +129,7 @@ subobjects). In return, SetLike gives us, all at once:
       contained in P, i.e., ∀ x ∈ N, x ∈ P,
     - extensionality: SetLike.ext says that two submonoids with the
       same elements are equal,
-    - a coercion to types: N can be used as the type of its elements
-      (see below).
+    - a coercion to types: N can be used as the type of its elements.
 -/
 
 example (N : Submonoid₁ M) {a b : M} (ha : a ∈ N) (hb : b ∈ N) :
@@ -144,47 +143,44 @@ example (N P : Submonoid₁ M) (h : ∀ x ∈ N, x ∈ P) : N ≤ P :=
   h
 
 /-
-The coercion to types sends N to the subtype {x : M // x ∈ N}: its
-terms are pairs ⟨x, hx⟩, where x : M and hx : x ∈ N. If y : N, then
-(y : M) is the underlying element, and y.property : ↑y ∈ N. Thus we
-can define the monoid structure on N, multiplying the underlying
-elements. Note how we use Subtype.ext, which says that two elements
-of a subtype are equal if their underlying elements are:
--/
-
-instance (N : Submonoid₁ M) : Monoid N where
-  mul := fun x y => ⟨x * y, N.mul_mem x.property y.property⟩
-  one := ⟨1, N.one_mem⟩
-  mul_assoc := fun x y z => Subtype.ext (mul_assoc (x : M) y z)
-  one_mul := fun x => Subtype.ext (one_mul (x : M))
-  mul_one := fun x => Subtype.ext (mul_one (x : M))
-
-example (N : Submonoid₁ M) (x y : N) : ((x * y : N) : M) = x * y :=
-  rfl
-
-/-
 Now it is your turn. Define the intersection of two submonoids, and
-the submonoid containing only 1 (replace all sorries):
+the submonoid containing only 1 (replace all sorries).
 -/
 
 def inter (N P : Submonoid₁ M) : Submonoid₁ M where
-  carrier := sorry
-  mul_mem := sorry
-  one_mem := sorry
+  carrier := N ∩ P
+  mul_mem := by
+    rintro a b ⟨haN, haP⟩ ⟨hbN, hbP⟩
+    exact ⟨N.mul_mem haN hbN, P.mul_mem haP hbP⟩
+  one_mem := ⟨N.one_mem, P.one_mem⟩
 
 def bot : Submonoid₁ M where
-  carrier := sorry
-  mul_mem := sorry
-  one_mem := sorry
+  carrier := {1}
+  mul_mem := by
+    rintro a b ha hb
+    simp_all
+  one_mem := rfl
 
-example (N P : Submonoid₁ M) (x : M) : x ∈ inter N P ↔ x ∈ N ∧ x ∈ P := by
-  sorry
+example (N P : Submonoid₁ M) (x : M) : x ∈ inter N P ↔ x ∈ N ∧ x ∈ P :=
+  ⟨fun hx => ⟨hx.1, hx.2⟩, fun hx => ⟨hx.1, hx.2⟩⟩
+
+/-
+You may find it useful below to use the change tactic, which can be
+used to change the goal (or a hypothesis, using the at) by a term that
+is definitionally equal. For instance, x ∈ {1} is definitionally equal
+to x=1.
+-/
 
 example (N : Submonoid₁ M) : bot ≤ N := by
-  sorry
+  intro x hx
+  rw [bot] at hx
+  change x=1 at hx
+  rw [hx]
+  exact N.one_mem
 
 example (N P : Submonoid₁ M) : inter N P ≤ N := by
-  sorry
+  intro x hx
+  exact hx.1
 
 end Submonoid₁
 
@@ -233,9 +229,16 @@ def ker (f : MonoidHom₁ M N) : Submonoid₁ M where
   one_mem := f.map_one
 
 def comap (f : MonoidHom₁ M N) (P : Submonoid₁ N) : Submonoid₁ M where
-  carrier := sorry
-  mul_mem := sorry
-  one_mem := sorry
+  carrier := f.toFun ⁻¹' P.carrier
+  mul_mem := by
+    intro x y hx hy
+    simp_all
+    rw [map_mul]
+    exact P.mul_mem hx hy
+  one_mem := by
+    simp
+    rw [map_one]
+    exact P.one_mem
 
 def map (f : MonoidHom₁ M N) (P : Submonoid₁ M) : Submonoid₁ N where
   carrier := sorry
@@ -245,7 +248,7 @@ def map (f : MonoidHom₁ M N) (P : Submonoid₁ M) : Submonoid₁ N where
 end MonoidHom₁
 
 /-
-Subobjects in mathlib. Mathlib has submonoids, subgroups, subrings,
+Mathlib has submonoids, subgroups, subrings,
 subspaces, ... for all its structures, and they work as ours: they
 are structures with a carrier set, and they are instances of
 SetLike, so we can use ∈, ≤, the coercions, SetLike.ext, and so on.
@@ -306,7 +309,6 @@ And, as with our submonoids, a subgroup is also a group, a subring a
 ring, and a subspace a vector space, through the coercion to types:
 -/
 
-#synth Group (⊤ : Subgroup G)
 example (W : Submodule K V) : Module K W := inferInstance
 
 end

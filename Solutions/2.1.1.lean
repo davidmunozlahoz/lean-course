@@ -5,7 +5,7 @@ import Mathlib
 /-
 In mathematics, many objects are, formally, tuples (even if we don't
 think of them as such): a point of ℝ³ is a triple of real numbers, a
-group is a set together with an operation, a unit and an inverse
+group is a set together with an operation, a unit and an inverse map
 satisfying some axioms, a ring is a... In Lean, tuples with named
 components are called structures. Here is a point of ℝ³ (this example
 is from [MIL, 7.1]):
@@ -57,10 +57,11 @@ a structure, with two fields, left : p and right : q. This is why we
 could build proofs of p ∧ q with ⟨hp, hq⟩, and use h.1 and h.2 (we can
 also refer to the fields by number).
 
-Note the dot notation: p₁.x is short for Point.x p₁. In general, if
-p : Point, then p.foo means Point.foo p, so we can define functions
-in the namespace Point and use them with the dot. Let us define the
-sum of two points, and prove it is commutative:
+Note the dot notation: p₁.x is short for Point.x p₁. In general, if p
+: Point, then p.foo means Point.foo p, so we can define a function Foo in
+the namespace Point, which in principle would require it to be
+called by its full name Point.Foo, and use it with the dot.
+Let us define the sum of two points, and prove it is commutative:
 -/
 
 namespace Point
@@ -94,10 +95,10 @@ theorem add_zero (a : Point) : a.add zero = a := by
   ext <;> simp only [add, zero] <;> ring
 
 theorem add_assoc (a b c : Point) : (a.add b).add c = a.add (b.add c) := by
-  sorry
+  ext <;> simp only [add] <;> ring
 
 theorem zero_add (a : Point) : zero.add a = a := by
-  sorry
+  ext <;> simp only [add, zero] <;> ring
 
 /-
 Now define the multiplication of a point by a scalar, and prove the
@@ -105,16 +106,16 @@ following properties (replace the sorrys in the definition too!):
 -/
 
 def smul (r : ℝ) (a : Point) : Point where
-  x := sorry
-  y := sorry
-  z := sorry
+  x := r * a.x
+  y := r * a.y
+  z := r * a.z
 
 theorem smul_add (r : ℝ) (a b : Point) :
     smul r (a.add b) = (smul r a).add (smul r b) := by
-  sorry
+  ext <;> simp only [add, smul] <;> rw [mul_add]
 
 theorem one_smul (a : Point) : smul 1 a = a := by
-  sorry
+  ext <;> simp only [smul] <;> rw [one_mul]
 
 end Point
 
@@ -156,7 +157,9 @@ def add (I J : Interval₁) : Interval₁ where
 
 theorem length_add (I J : Interval₁) :
     (I.add J).length = I.length + J.length := by
-  sorry
+  unfold length add
+  dsimp
+  ring
 
 /-
 Now define the opposite of an interval, -[a, b] = [-b, -a], and the
@@ -164,20 +167,26 @@ interval [a, a] for every a : ℝ. Then prove the theorems below.
 -/
 
 def neg (I : Interval₁) : Interval₁ where
-  lo := sorry
-  hi := sorry
-  lo_le_hi := sorry
+  lo := - I.hi
+  hi := - I.lo
+  lo_le_hi := by
+    rw [neg_le, neg_neg]
+    exact I.lo_le_hi
 
 def point (a : ℝ) : Interval₁ where
-  lo := sorry
-  hi := sorry
-  lo_le_hi := sorry
+  lo := a
+  hi := a
+  lo_le_hi := le_refl a
 
 theorem length_neg (I : Interval₁) : I.neg.length = I.length := by
-  sorry
+  unfold length neg
+  dsimp
+  ring
 
 theorem length_point (a : ℝ) : (point a).length = 0 := by
-  sorry
+  unfold length point
+  dsimp
+  rw [sub_eq_zero]
 
 end Interval₁
 
@@ -204,7 +213,7 @@ parameters, just like functions, we can define the structure of a
 monoid on a given type α:
 -/
 
-structure Monoid₁ (α : Type*) where
+structure Monoid₁ (α : Type) where
   mul : α → α → α
   one : α
   mul_assoc : ∀ x y z, mul (mul x y) z = mul x (mul y z)
@@ -235,10 +244,11 @@ def natAdd : Monoid₁ ℕ where
 
 /-
 And we can prove theorems about all monoids. For instance, the unit
-is unique:
+is unique (the dot in the name acts as if we defined the theorem
+one_unique inside the namespace Monoid₁):
 -/
 
-theorem Monoid₁.one_unique {α : Type*} (M : Monoid₁ α) (e : α)
+theorem Monoid₁.one_unique {α : Type} (M : Monoid₁ α) (e : α)
     (h : ∀ x, M.mul e x = x) : e = M.one := by
   rw [← M.mul_one e]
   exact h M.one
@@ -254,18 +264,27 @@ functions α → α with the composition (as usual, replace the sorries).
 -/
 
 def natMul : Monoid₁ ℕ where
-  mul := sorry
-  one := sorry
-  mul_assoc := sorry
-  one_mul := sorry
-  mul_one := sorry
+  mul := fun n m => n * m
+  one := 1
+  mul_assoc := Nat.mul_assoc
+  one_mul := Nat.one_mul
+  mul_one := Nat.mul_one
 
-def endo (α : Type*) : Monoid₁ (α → α) where
-  mul := sorry
-  one := sorry
-  mul_assoc := sorry
-  one_mul := sorry
-  mul_one := sorry
+def endo (α : Type) : Monoid₁ (α → α) where
+  mul := fun f g => f ∘ g
+  one := fun a => a
+  mul_assoc := by
+    intro f g h
+    ext a
+    simp
+  one_mul := by
+    intro f
+    ext a
+    simp
+  mul_one := by
+    intro f
+    ext a
+    simp
 
 /-
 Now prove that, in any monoid, if an element y is a right inverse of
@@ -273,9 +292,14 @@ x and z is a left inverse of x, then y = z (look at the infoview to
 see how M.mul works):
 -/
 
-theorem Monoid₁.inv_unique {α : Type*} (M : Monoid₁ α) (x y z : α)
+theorem Monoid₁.inv_unique {α : Type} (M : Monoid₁ α) (x y z : α)
     (hy : M.mul x y = M.one) (hz : M.mul z x = M.one) : y = z := by
-  sorry
+  calc
+    y = M.mul M.one y := (M.one_mul y).symm
+    _ = M.mul (M.mul z x) y := by rw [hz]
+    _ = M.mul z (M.mul x y) := M.mul_assoc z x y
+    _ = M.mul z M.one := by rw [hy]
+    _ = z := M.mul_one z
 
 /-
 This works, but it is far from the way we write mathematics:

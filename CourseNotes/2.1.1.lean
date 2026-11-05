@@ -5,7 +5,7 @@ import Mathlib
 /-
 In mathematics, many objects are, formally, tuples (even if we don't
 think of them as such): a point of ℝ³ is a triple of real numbers, a
-group is a set together with an operation, a unit and an inverse
+group is a set together with an operation, a unit and an inverse map
 satisfying some axioms, a ring is a... In Lean, tuples with named
 components are called structures. Here is a point of ℝ³ (this example
 is from [MIL, 7.1]):
@@ -57,10 +57,11 @@ a structure, with two fields, left : p and right : q. This is why we
 could build proofs of p ∧ q with ⟨hp, hq⟩, and use h.1 and h.2 (we can
 also refer to the fields by number).
 
-Note the dot notation: p₁.x is short for Point.x p₁. In general, if
-p : Point, then p.foo means Point.foo p, so we can define functions
-in the namespace Point and use them with the dot. Let us define the
-sum of two points, and prove it is commutative:
+Note the dot notation: p₁.x is short for Point.x p₁. In general, if p
+: Point, then p.foo means Point.foo p, so we can define a function Foo in
+the namespace Point, which in principle would require it to be
+called by its full name Point.Foo, and use it with the dot.
+Let us define the sum of two points, and prove it is commutative:
 -/
 
 namespace Point
@@ -204,7 +205,7 @@ parameters, just like functions, we can define the structure of a
 monoid on a given type α:
 -/
 
-structure Monoid₁ (α : Type*) where
+structure Monoid₁ (α : Type) where
   mul : α → α → α
   one : α
   mul_assoc : ∀ x y z, mul (mul x y) z = mul x (mul y z)
@@ -235,10 +236,11 @@ def natAdd : Monoid₁ ℕ where
 
 /-
 And we can prove theorems about all monoids. For instance, the unit
-is unique:
+is unique (the dot in the name acts as if we defined the theorem
+one_unique inside the namespace Monoid₁):
 -/
 
-theorem Monoid₁.one_unique {α : Type*} (M : Monoid₁ α) (e : α)
+theorem Monoid₁.one_unique {α : Type} (M : Monoid₁ α) (e : α)
     (h : ∀ x, M.mul e x = x) : e = M.one := by
   rw [← M.mul_one e]
   exact h M.one
@@ -260,7 +262,7 @@ def natMul : Monoid₁ ℕ where
   one_mul := sorry
   mul_one := sorry
 
-def endo (α : Type*) : Monoid₁ (α → α) where
+def endo (α : Type) : Monoid₁ (α → α) where
   mul := sorry
   one := sorry
   mul_assoc := sorry
@@ -273,7 +275,7 @@ x and z is a left inverse of x, then y = z (look at the infoview to
 see how M.mul works):
 -/
 
-theorem Monoid₁.inv_unique {α : Type*} (M : Monoid₁ α) (x y z : α)
+theorem Monoid₁.inv_unique {α : Type} (M : Monoid₁ α) (x y z : α)
     (hy : M.mul x y = M.one) (hz : M.mul z x = M.one) : y = z := by
   sorry
 

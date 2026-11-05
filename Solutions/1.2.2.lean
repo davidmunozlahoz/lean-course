@@ -18,9 +18,9 @@ mathematics. Everything is checked by Lean, and everything is unified
 in a single library, so the definitions and theorems of different
 areas work together.
 
-The first thing you can do with mathlib is calculating.
-Theorems in mathlib are just like the theorems we wrote in 1.1, so we
-use them by applying them, or rewriting with them:
+The first thing you can do with mathlib is calculating by rewriting
+using available theorems. Look at the following theorems in mathlib,
+and also notices how binary operations associate in Lean:
 -/
 
 #check mul_comm    -- mul_comm (a b : G) : a * b = b * a
@@ -41,11 +41,11 @@ product that you did not intend to.
 -/
 
 example (a b c : ℝ) : c * b * a = b * (a * c) := by
-  sorry
+  rw [mul_assoc c b a, mul_comm c (b * a), mul_assoc]
 
 example (a b c d : ℝ) (hyp : c = d * a + b) (hyp' : b = a * d) :
     c = 2 * a * d := by
-  sorry
+  rw [hyp, mul_comm d a, hyp', two_mul, add_mul]
 
 /-
 Proving these identities by hand is instructive, but quickly becomes
@@ -76,15 +76,35 @@ example : (2 : ℝ) ^ 10 = 1024 := by
   norm_num
 
 /-
-Note the (2 : ℝ): without it, Lean would think that 2 ^ 10 = 1024 is
-a statement about natural numbers.
+  Note the (2 : ℝ): without it, Lean would think that 2 ^ 10 = 1024 is
+  a statement about natural numbers.
 
-Very often, these tactics need a little help. linarith only uses the
-hypotheses in the context, and it knows nothing about squares,
-absolute values, and so on. But we can give it additional facts in
-square brackets, as with rw: linarith [h₁, h₂] works as if h₁ and h₂
-were in the context. These facts can be any terms, e.g., theorems
-applied to some arguments, like sq_nonneg (a - b) : 0 ≤ (a - b) ^ 2:
+  In Lean, a natural number is not a real number: they are terms of
+  different types. So, if n : ℕ and x : ℝ, then x + n should not even
+  make sense. But on paper we write this kind of thing all the time,
+  and Lean lets us do it too: it knows how to convert n into a real
+  number, and it tries to do it automatically. This conversion is
+  called a coercion, and it appears in the infoview as an arrow, ↑n.
+  We can also ask for it explicitly, by writing (n : ℝ). Look at the
+  infoview here:
+-/
+
+example (n : ℕ) (x : ℝ) : x + n = n + x := by
+  ring
+
+/-
+  Most of the time you can ignore these arrows. But if a goal looks
+  obvious and a tactic refuses to prove it, check whether there is an
+  arrow in the way. We will explain coercions in detail in 2.1.4.
+-/
+
+/-
+  Very often, these tactics need a little help. linarith only uses the
+  hypotheses in the context, and it knows nothing about squares,
+  absolute values, and so on. But we can give it additional facts in
+  square brackets, as with rw: linarith [h₁, h₂] works as if h₁ and h₂
+  were in the context. These facts can be any terms, e.g., theorems
+  applied to some arguments, like sq_nonneg (a - b) : 0 ≤ (a - b) ^ 2:
 -/
 
 example (a b : ℝ) : 2 * a * b ≤ a ^ 2 + b ^ 2 := by
@@ -111,18 +131,53 @@ example (a : ℝ) (h : a * 1 + 0 = 5) : a = 5 := by
   exact h
 
 example (a b : ℝ) : a ≤ a + b ^ 2 := by
-  sorry
-
-example (x y : ℝ) (h : x ≤ y) : x - |y| ≤ y + |x| := by
-  sorry   -- Hint: 0 ≤ |x| is abs_nonneg x.
+  simp [sq_nonneg b]
 
 example (a b c : ℝ) (h₁ : a = b + 1) (h₂ : b = 2 * c) (h₃ : c = 1) :
     a * 1 = 3 := by
-  sorry
+  rw [h₂] at h₁
+  rw [h₃] at h₁
+  rw [h₁]
+  norm_num
 
 example (f : ℕ → ℕ) (hf : ∀ n, f n = n + 1) (k : ℕ) (h : f 2 = k) :
     k = 3 := by
-  sorry
+  rw [hf 2] at h
+  rw [← h]
+
+/-
+There is one more tactic that you should know about: grind. The
+tactics above each do one specific kind of job, but grind combines
+many of them. It assumes the negation of the target, and then it
+derives consequences from everything in the context, splitting into
+cases, using equalities and ∀ hypotheses, and doing algebra and linear
+arithmetic, until it reaches a contradiction:
+-/
+
+example (f : ℝ → ℝ) (a b : ℝ) (h : a = b + 1) : f (a - 1) = f b := by
+  grind
+
+example (a b : ℝ) (h : a * b = 1) (h' : a = 2) : b = 1 / 2 := by
+  grind
+
+/-
+Like linarith, it sometimes needs a little help, and we can give it
+additional facts in square brackets. Without the hint, this one fails:
+-/
+
+example (a b : ℝ) : 2 * a * b ≤ a ^ 2 + b ^ 2 := by
+  grind [sq_nonneg (a - b)]
+
+/-
+grind is so powerful that it solves most of the exercises of this course. So
+use it with care! If you close every exercise with grind, you will
+learn nothing from them. Try
+to solve the exercises with the other tactics first, and keep grind
+for the routine goals, the ones you already know how to solve.
+Remember that if a short, elegant, and legible proof is available, it
+is always better and more efficient than a powerful black box like
+grind.
+-/
 
 /-
 Next, inequalities. a ≤ b is typed using \le.

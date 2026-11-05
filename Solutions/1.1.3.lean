@@ -86,7 +86,9 @@ anything. This is why a finished proof should never contain one.
 /-
 Let us now introduce the propositional connectives. For each of them
 you have to know two things: how to prove it (introduction), and how
-to use it (elimination).
+to use it (elimination). The following is an overview of these
+connectives. Don't feel intimidated by it: we'll go through them one
+by one, with lots of examples and exercises.
 
     Connective  Typed   Introduction            Elimination
     ----------  ------  ----------------------  -------------------------
@@ -102,7 +104,10 @@ to use it (elimination).
 The angle brackets ⟨ ⟩ are typed \< and \>. They are called the
 anonymous constructor, and can be used whenever Lean knows which
 structure it has to build. Note that ¬p is defined as p → False, so
-to prove ¬p you assume p and reach a contradiction.
+to prove ¬p you assume p and reach a contradiction. The binding of
+these connectors follows the usual mathematical convention; from
+strongest to weakest, they are: negation, conjunction, disjunction,
+implication, and biconditional.
 
 Some examples and exercises:
 -/
@@ -143,15 +148,29 @@ any of its two components: h.1 : p and h.2 : q (these are
 And.left h and And.right h).
 -/
 
+#check And.intro
+
 example (hp : p) (hq : q) : p ∧ q := ⟨hp, hq⟩
 
 example (h : p ∧ q) : q ∧ p := ⟨h.2, h.1⟩
 
-example : p ∧ (q ∧ r) → (p ∧ q) ∧ r := sorry
+example : p ∧ (q ∧ r) → (p ∧ q) ∧ r :=
+  fun ⟨hp, hq, hr⟩ => ⟨⟨hp, hq⟩, hr⟩
 
-example : (p → q → r) → (p ∧ q → r) := sorry
+example : (p → q → r) → (p ∧ q → r) :=
+  fun hpqr => (fun ⟨hp, hq⟩ => hpqr hp hq)
 
-example : (p → q) → p ∧ r → q ∧ r := sorry
+example : (p → q) → p ∧ r → q ∧ r :=
+  fun hpq => (fun ⟨hp, hr⟩ => ⟨hpq hp, hr⟩)
+
+/-
+Most of the time, we don't write Lean terms directly, but use tactics
+instead.
+At this point of the course, you can continue reading to actually
+learn the Lean fundamentals and how to construct terms, or jump
+directly to 1.2.0 to start working with tactics and more tangible
+mathematics quicker.
+-/
 
 /-
 Or. To prove p ∨ q, we prove one of the two, and we have to say
@@ -160,6 +179,9 @@ get Or.inr hq : p ∨ q (inl and inr stand for "injection left" and
 "injection right"). To use h : p ∨ q to prove some r, we argue by
 cases: we prove r assuming p, and r assuming q. This is
 Or.elim h (fun hp => ...) (fun hq => ...) : r.
+
+Note that we cannot construct Or using the anonymous constructor; the reason is
+that Or has more than one possible constructor.
 -/
 
 example : p → p ∨ q := fun hp => Or.inl hp
@@ -167,7 +189,9 @@ example : p → p ∨ q := fun hp => Or.inl hp
 example (h : p ∨ q) : q ∨ p :=
   Or.elim h (fun hp => Or.inr hp) (fun hq => Or.inl hq)
 
-example : p ∨ (q ∨ r) → (p ∨ q) ∨ r := sorry
+example : p ∨ (q ∨ r) → (p ∨ q) ∨ r :=
+  fun hpqr => Or.elim hpqr (fun hp => Or.inl (Or.inl hp)) (fun hqr =>
+    Or.elim hqr (fun hq => Or.inl (Or.inr hq)) (fun hr => Or.inr hr))
 
 example : (p → r) → (q → r) → p ∨ q → r := sorry
 
@@ -188,15 +212,19 @@ example : True := trivial
 
 example (hp : p) (hnp : ¬p) : q := False.elim (hnp hp)
 
-example : False → p := sorry
+example : False → p := fun hf => False.elim hf
 
-example : p → ¬¬p := sorry
+example : p → ¬¬p :=
+  fun hp => (fun hnp => hnp hp)
 
-example : (p → q) → ¬q → ¬p := sorry
+example : (p → q) → ¬q → ¬p :=
+  fun hpq => (fun hnq => (fun hp => hnq (hpq hp)))
 
-example : ¬(p ∧ ¬p) := sorry
+example : ¬(p ∧ ¬p) :=
+  fun hpnp => hpnp.2 hpnp.1
 
-example : ¬p ∨ ¬q → ¬(p ∧ q) := sorry
+example : ¬p ∨ ¬q → ¬(p ∧ q) :=
+  fun hnpnq => (fun ⟨hp, hq⟩ => Or.elim hnpnq (fun hnp => hnp hp) (fun hnq => hnq hq))
 
 /-
 If and only if. To prove p ↔ q, we prove both implications: given
@@ -218,7 +246,9 @@ example : (p ↔ q) → (q ↔ r) → (p ↔ r) := sorry
 
 example : (p → q → r) ↔ (p ∧ q → r) := sorry
 
-example : (p ∨ q → r) ↔ (p → r) ∧ (q → r) := sorry
+example : (p ∨ q → r) ↔ (p → r) ∧ (q → r) :=
+  ⟨fun h => ⟨fun hp => h (Or.inl hp), fun hq => h (Or.inr hq)⟩,
+   fun ⟨h1, h2⟩ => (fun hporq => Or.elim hporq h1 h2)⟩
 
 example : ¬(p ∨ q) ↔ ¬p ∧ ¬q :=
   ⟨fun h => ⟨fun hp => h (Or.inl hp), fun hq => h (Or.inr hq)⟩,

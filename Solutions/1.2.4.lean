@@ -75,10 +75,22 @@ example : s ∩ t = t ∩ s := by
     exact ⟨xs, xt⟩
 
 example : s ∩ t ∪ s ∩ u ⊆ s ∩ (t ∪ u) := by
-  sorry
+  -- grind, duh!
+  rintro x (hst | hsu)
+  · exact ⟨hst.1, Or.inl hst.2⟩
+  · exact ⟨hsu.1, Or.inr hsu.2⟩
 
 example : (s \ t) \ u ⊆ s \ (t ∪ u) := by
-  sorry
+  -- grind, duh!
+  intro x hx
+  constructor
+  · exact hx.1.1
+  · have xnotu : x ∉ u := hx.2
+    have xnott : x ∉ t := hx.1.2
+    intro hcon
+    rcases hcon with ht | hu
+    · exact xnott ht
+    · exact xnotu hu
 
 example : s ∩ (s ∪ t) = s := by
   sorry
@@ -90,7 +102,12 @@ example : s \ t ∪ t = s ∪ t := by
   sorry
 
 example : (s ∪ t)ᶜ = sᶜ ∩ tᶜ := by
+  ext x
+  constructor
   sorry
+  sorry
+
+
 
 /-
 Sets defined by a property work in the same way: x ∈ {x | P x} is,
@@ -107,7 +124,13 @@ example : evens ∪ odds = univ := by
   exact em (Even n)
 
 example : evens ∩ odds = ∅ := by
-  sorry
+  ext n
+  constructor
+  · intro h
+    exact h.2 h.1
+  · intro f
+    exfalso
+    exact f
 
 /-
 Let us move on to functions. In 1.1 we have already seen
@@ -149,10 +172,14 @@ x ∈ t, so y ∈ f '' t; and conversely".
 -/
 
 example : s ⊆ f ⁻¹' (f '' s) := by
-  sorry
+  intro x hx
+  use x
 
 example : f '' (f ⁻¹' v) ⊆ v := by
-  sorry
+  intro x hx
+  obtain ⟨y, hy, hyx⟩ := hx
+  rw [← hyx]
+  exact hy
 
 example : f '' s ⊆ v ↔ s ⊆ f ⁻¹' v := by
   sorry
@@ -187,26 +214,66 @@ example : Surjective (fun x : ℝ => 2 * x + 3) := by
   ring
 
 example (h : Injective f) : f ⁻¹' (f '' s) ⊆ s := by
-  sorry
+  intro x hx
+  have : f x ∈ f '' s := hx
+  obtain ⟨y, hy1, hy2⟩ := this
+  apply h at hy2
+  rwa [← hy2]
 
 example (h : Injective f) : f '' (s ∩ t) = f '' s ∩ f '' t := by
-  sorry
+  ext x
+  constructor
+  · intro hx
+    obtain ⟨y, hy1, hy2⟩ := hx
+    exact ⟨⟨y, hy1.1, hy2⟩, ⟨y, hy1.2, hy2⟩⟩
+  · intro hx
+    obtain ⟨y, hy1, hy2⟩ := hx.1
+    obtain ⟨z, hz1, hz2⟩ := hx.2
+    have : f y = f z := hy2.trans hz2.symm
+    apply h at this
+    have : y ∈ s ∩ t := ⟨hy1, this.symm ▸ hz1⟩
+    exact ⟨y, this, hy2⟩
 
 example (h : Surjective f) : f '' (f ⁻¹' v) = v := by
-  sorry
+  ext x
+  constructor
+  · intro hx
+    obtain ⟨y, hy1, hy2⟩ := hx
+    have : f y ∈ v := hy1
+    exact hy2 ▸ this
+  · intro hx
+    obtain ⟨y, hy⟩ := h x
+    have : y ∈ f⁻¹' v := by
+      simp
+      rw [hy]
+      exact hx
+    exact ⟨y, this, hy⟩
 
 example {γ : Type*} (g : β → γ) (hf : Injective f) (hg : Injective g) :
     Injective (g ∘ f) := by
-  sorry
+  intro x y hxy
+  simp at hxy
+  exact hf (hg hxy)
 
 example {γ : Type*} (g : β → γ) (hf : Surjective f) (hg : Surjective g) :
     Surjective (g ∘ f) := by
-  sorry
+  intro z
+  obtain ⟨y, hy⟩ := hg z
+  obtain ⟨x, hx⟩ := hf y
+  use x
+  simp
+  rw [hx, hy]
 
 example {γ : Type*} (g : β → γ) (h : Injective (g ∘ f)) : Injective f := by
-  sorry
+  intro x y hxy
+  have : g (f x) = g (f y) := by congr
+  apply h at this
+  assumption -- or exact this
 
 example : ¬Injective (fun x : ℝ => x ^ 2) := by
-  sorry
+  intro hcon
+  have : (fun x : ℝ => x ^ 2) 1 = (fun x : ℝ => x ^ 2) (-1) := by norm_num
+  have : (1 : ℝ) = (-1 : ℝ) := hcon this
+  grind
 
 end

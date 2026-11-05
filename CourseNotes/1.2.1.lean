@@ -1,4 +1,4 @@
-import Mathlib
+import Mathlib.Tactic
 
 /- 1.2.1 Basic tactics -/
 
@@ -14,7 +14,8 @@ Tactics allow us to do precisely this. A tactic is an instruction
 that tells Lean how to make progress in the proof: "assume", "split
 into two cases", "apply this theorem", and so on. Behind the scenes,
 each tactic builds a piece of the proof term for us. We enter tactic
-mode with the keyword by:
+mode with the keyword by (don't worry about the meaning of the tactics
+in the next example; we'll go through them one by one below):
 -/
 
 section
@@ -270,14 +271,24 @@ example : (p → q) → (q → r) → p → r := by
   exact hr
 
 /-
-Try to use have to organize the following proofs:
+We can also omit the name: have : q := proof adds the hypothesis to
+the context with the name this, which we can use as any other name.
+And if the statement can be deduced from the proof, we can omit it
+too, and write simply have := proof.
 -/
 
-example : (p → q) → (q → r) → (r → ¬p) → ¬p := by
-  sorry
+example : (p → q) → (q → r) → p → r := by
+  intro hpq hqr hp
+  have : q := hpq hp
+  exact hqr this
 
-example : (p ∧ q → r) → (p → q) → p → r := by
-  sorry
+/-
+There is only one this at a time: after a second nameless have, the
+name this refers to the new hypothesis. The old one stays in the
+context, but it appears as this✝ in the infoview, and we cannot refer
+to it by that name. So this is fine for a fact that we use right
+away, as above, but anything that we need later deserves a name.
+-/
 
 /-
 use (and the quantifiers). Recall that ∀ is a (dependent) function,
